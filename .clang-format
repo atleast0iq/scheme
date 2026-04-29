@@ -1,0 +1,34 @@
+---
+Language: Cpp
+BasedOnStyle: LLVM
+
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 100
+
+AccessModifierOffset: -4
+BreakBeforeBraces: Attach
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+
+PointerAlignment: Left
+ReferenceAlignment: Left
+DerivePointerAlignment: false
+
+IncludeBlocks: Regroup
+SortIncludes: true
+IncludeCategories:
+  - Regex: '^"interpreter/.*"'
+    Priority: 1
+  - Regex: '^"(parser|runtime|tokenizer|repl)/.*"'
+    Priority: 2
+  - Regex: '^<.*>'
+    Priority: 3
+  - Regex: '.*'
+    Priority: 4
+
+NamespaceIndentation: None
+FixNamespaceComments: true
+...
