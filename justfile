@@ -26,5 +26,18 @@ run-debug: debug
 run-release: release
     ./{{release_dir}}/scheme_repl
 
+test: debug
+    ./{{debug_dir}}/tests/scheme_tests
+
+coverage_dir := "build/coverage"
+
+coverage:
+    cmake -S . -B {{coverage_dir}} -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON
+    cmake --build {{coverage_dir}}
+    ./{{coverage_dir}}/tests/scheme_tests
+    lcov --capture --directory {{coverage_dir}} --output-file {{coverage_dir}}/coverage.info --exclude '/usr/*' --exclude '*/tests/*'
+    genhtml {{coverage_dir}}/coverage.info --output-directory {{coverage_dir}}/html
+    @echo "Report: {{coverage_dir}}/html/index.html"
+
 clean:
     rm -rf build

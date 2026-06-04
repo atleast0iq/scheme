@@ -30,6 +30,11 @@ Interpreter::~Interpreter() {
     Heap::Instance().Collect({});
 }
 
+void Interpreter::Reset() {
+    env_ = MakeDefaultEnv();
+    Heap::Instance().Collect({env_});
+}
+
 std::string Interpreter::Run(const std::string& input) {
     std::stringstream stream{input};
     Tokenizer tokenizer{&stream};

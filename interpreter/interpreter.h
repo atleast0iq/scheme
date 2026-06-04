@@ -14,6 +14,7 @@ public:
     Interpreter& operator=(Interpreter&&) = delete;
 
     std::string Run(const std::string& input);
+    void Reset();
 
 private:
     Interpreter();

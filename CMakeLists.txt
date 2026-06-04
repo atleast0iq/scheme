@@ -6,25 +6,19 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_library(scheme
-    tokenizer/tokenizer.cpp
-    parser/parser.cpp
-    interpreter/interpreter.cpp
-    runtime/heap.cpp
-    runtime/object.cpp
-    runtime/environment.cpp
-    runtime/special_forms.cpp
-    runtime/builtins.cpp
-)
+add_library(scheme_includes INTERFACE)
+target_include_directories(scheme_includes INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_include_directories(scheme PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
-)
+option(ENABLE_COVERAGE "Enable code coverage" OFF)
 
-add_executable(scheme_repl
-    repl/main.cpp
-)
+if(ENABLE_COVERAGE)
+    add_compile_options(--coverage)
+    add_link_options(--coverage)
+endif()
 
-target_link_libraries(scheme_repl PRIVATE
-    scheme
-)
+add_subdirectory(tokenizer)
+add_subdirectory(runtime)
+add_subdirectory(parser)
+add_subdirectory(interpreter)
+add_subdirectory(repl)
+add_subdirectory(tests)
