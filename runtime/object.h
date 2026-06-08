@@ -180,8 +180,10 @@ private:
 
 class LambdaFunction : public Function {
 public:
-    LambdaFunction(std::vector<std::string> params, Object* body, Environment* closure)
-        : params_(std::move(params)), body_(body), closure_(closure) {
+    LambdaFunction(std::vector<std::string> params, std::string rest_param, Object* body,
+                   Environment* closure)
+        : params_(std::move(params)), rest_param_(std::move(rest_param)), body_(body),
+          closure_(closure) {
     }
 
     Object* Apply(const std::vector<Object*>& args, Environment& env) override;
@@ -194,6 +196,7 @@ public:
 
 private:
     std::vector<std::string> params_;
+    std::string rest_param_;
     Object* body_;
     Environment* closure_;
 };

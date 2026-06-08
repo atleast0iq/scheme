@@ -42,10 +42,19 @@ std::pair<Object*, Object*> ReadTwoArguments(std::string_view form_name, Object*
     return {first_cell->GetFirst(), second_cell->GetFirst()};
 }
 
-std::vector<std::string> ReadParameterNames(Object* params) {
-    std::vector<std::string> result;
+struct ParsedParams {
+    std::vector<std::string> fixed;
+    std::string rest;
+};
+
+ParsedParams ReadParameterNames(Object* params) {
+    ParsedParams result;
     auto* current = params;
     while (current != nullptr) {
+        if (auto* symbol = As<Symbol>(current)) {
+            result.rest = symbol->GetName();
+            break;
+        }
         auto* cell = As<Cell>(current);
         if (!cell) {
             throw SyntaxError("lambda parameters must form a proper list");
@@ -54,7 +63,7 @@ std::vector<std::string> ReadParameterNames(Object* params) {
         if (!symbol) {
             throw SyntaxError("lambda parameters must be symbols");
         }
-        result.push_back(symbol->GetName());
+        result.fixed.push_back(symbol->GetName());
         current = cell->GetSecond();
     }
     return result;
@@ -72,7 +81,8 @@ Object* MakeLambdaValue(Heap& heap, Environment& env, Object* params, Object* bo
     if (!body) {
         throw SyntaxError("lambda expects parameter list and body");
     }
-    return heap.Create<LambdaFunction>(ReadParameterNames(params), body, &env);
+    auto [fixed, rest] = ReadParameterNames(params);
+    return heap.Create<LambdaFunction>(std::move(fixed), std::move(rest), body, &env);
 }
 
 Object* MakeShortCircuitForm(Heap& heap, std::string name, bool empty_result, auto should_return) {

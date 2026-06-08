@@ -537,8 +537,11 @@ TEST_F(SchemeTest, SetNonSymbol) {
     ExpectSyntaxError("(set! 1 2)");
 }
 
-TEST_F(SchemeTest, LambdaImproperParamList) {
-    ExpectSyntaxError("(lambda (x . y) x)");
+TEST_F(SchemeTest, LambdaVariadicParams) {
+    ExpectEq("((lambda (x . rest) rest) 1 2 3)", "(2 3)");
+    ExpectEq("((lambda args args) 1 2 3)", "(1 2 3)");
+    ExpectEq("((lambda (x . rest) x) 1 2 3)", "1");
+    ExpectSyntaxError("(lambda (1 . rest) rest)");
 }
 
 TEST_F(SchemeTest, LambdaParamsMustBeSymbols) {

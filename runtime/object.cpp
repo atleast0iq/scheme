@@ -114,7 +114,10 @@ void Cell::Traverse(const std::function<void(GcNode*)>& visit) {
 }
 
 Object* LambdaFunction::Apply(const std::vector<Object*>& args, Environment&) {
-    if (args.size() != params_.size()) {
+    if (rest_param_.empty() && args.size() != params_.size()) {
+        throw RuntimeError("Wrong number of arguments");
+    }
+    if (!rest_param_.empty() && args.size() < params_.size()) {
         throw RuntimeError("Wrong number of arguments");
     }
 
@@ -122,6 +125,13 @@ Object* LambdaFunction::Apply(const std::vector<Object*>& args, Environment&) {
     auto* local_env = heap.Create<Environment>(closure_);
     for (size_t i = 0; i < params_.size(); ++i) {
         local_env->Define(params_[i], args[i]);
+    }
+    if (!rest_param_.empty()) {
+        Object* rest = nullptr;
+        for (auto it = args.rbegin(); it != args.rend() - static_cast<ptrdiff_t>(params_.size()); ++it) {
+            rest = heap.Create<Cell>(*it, rest);
+        }
+        local_env->Define(rest_param_, rest);
     }
 
     auto* current = body_;
