@@ -5,7 +5,7 @@
 
 #include <array>
 
-inline constexpr std::array<BuiltinDefinition, 9> kBuiltinForms = {{
+inline constexpr std::array<BuiltinDefinition, 10> kBuiltinForms = {{
     {"quote", MakeQuoteForm},
     {"and", MakeAndForm},
     {"or", MakeOrForm},
@@ -15,4 +15,5 @@ inline constexpr std::array<BuiltinDefinition, 9> kBuiltinForms = {{
     {"lambda", MakeLambdaForm},
     {"set-car!", MakeSetCarForm},
     {"set-cdr!", MakeSetCdrForm},
+    {"begin", MakeBeginForm},
 }};

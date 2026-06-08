@@ -12,3 +12,4 @@ Object* MakeSetForm(Heap& heap);
 Object* MakeLambdaForm(Heap& heap);
 Object* MakeSetCarForm(Heap& heap);
 Object* MakeSetCdrForm(Heap& heap);
+Object* MakeBeginForm(Heap& heap);

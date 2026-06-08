@@ -553,6 +553,20 @@ TEST_F(SchemeTest, LambdaImproperBody) {
     ExpectEq("(f 1)", "1");
 }
 
+TEST_F(SchemeTest, Begin) {
+    ExpectEq("(begin 1 2 3)", "3");
+    ExpectEq("(begin 42)", "42");
+    ExpectEq("(begin)", "()");
+    ExpectNoError("(begin (define x 1) (define y 2))");
+    ExpectEq("(+ x y)", "3");
+    ExpectEq("(if #t (begin (define z 10) (* z 2)) 0)", "20");
+}
+
+TEST_F(SchemeTest, BeginTailCall) {
+    ExpectNoError("(define (f n) (begin (if (= n 0) 42 (f (- n 1)))))");
+    ExpectEq("(f 100000)", "42");
+}
+
 TEST_F(SchemeTest, GcCollectsTemporaryObjects) {
     ExpectNoError("(define (loop n) (if (= n 0) 42 (loop (- n 1))))");
     constexpr uint32_t kIterations = 1000;

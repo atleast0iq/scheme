@@ -252,3 +252,21 @@ Object* MakeSetCdrForm(Heap& heap) {
         return nullptr;
     });
 }
+
+Object* MakeBeginForm(Heap& heap) {
+    return MakeBuiltinForm(heap, "begin", [&heap](Object* raw_args, Environment& env) -> Object* {
+        AssertProperRawArgumentList("begin", raw_args);
+        if (!raw_args) {
+            return nullptr;
+        }
+        for (auto* current = raw_args; current; current = As<Cell>(current)->GetSecond()) {
+            auto* cell = As<Cell>(current);
+            AssertExpressionExists("begin body", cell->GetFirst());
+            if (cell->GetSecond() == nullptr) {
+                return heap.Create<TailCall>(cell->GetFirst(), &env);
+            }
+            cell->GetFirst()->Eval(env);
+        }
+        return nullptr;
+    });
+}
