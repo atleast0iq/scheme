@@ -81,16 +81,23 @@ Object* MakeShortCircuitForm(Heap& heap, std::string name, bool empty_result, au
         [&heap, name, empty_result, should_return](Object* raw_args, Environment& env) -> Object* {
             AssertProperRawArgumentList(name, raw_args);
 
-            Object* result = MakeBoolean(heap, empty_result);
+            if (!raw_args) {
+                return MakeBoolean(heap, empty_result);
+            }
+
             for (auto* current = raw_args; current; current = As<Cell>(current)->GetSecond()) {
-                auto* expression = As<Cell>(current)->GetFirst();
+                auto* cell = As<Cell>(current);
+                auto* expression = cell->GetFirst();
                 AssertExpressionExists("argument", expression);
-                result = expression->Eval(env);
+                if (cell->GetSecond() == nullptr) {
+                    return heap.Create<TailCall>(expression, &env);
+                }
+                auto* result = expression->Eval(env);
                 if (should_return(result)) {
                     return result;
                 }
             }
-            return result;
+            return nullptr;
         });
 }
 
