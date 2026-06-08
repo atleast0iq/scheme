@@ -21,10 +21,10 @@ release:
     cmake --build {{release_dir}}
 
 run-debug: debug
-    ./{{debug_dir}}/scheme_repl
+    ./{{debug_dir}}/repl/scheme_repl
 
 run-release: release
-    ./{{release_dir}}/scheme_repl
+    ./{{release_dir}}/repl/scheme_repl
 
 test: debug
     ./{{debug_dir}}/tests/scheme_tests

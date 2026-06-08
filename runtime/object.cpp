@@ -41,18 +41,36 @@ Object* Symbol::Eval(Environment& env) {
 }
 
 Object* Cell::Eval(Environment& env) {
-    if (!first_) {
-        throw RuntimeError("Cannot call empty list");
-    }
+    Object* expr = this;
+    Environment* current_env = &env;
 
-    auto* callee = first_->Eval(env);
-    if (auto* special_form = As<SpecialForm>(callee)) {
-        return special_form->Apply(second_, env);
+    while (true) {
+        Object* result;
+
+        if (auto* cell = As<Cell>(expr)) {
+            if (!cell->GetFirst()) {
+                throw RuntimeError("Cannot call empty list");
+            }
+            auto* callee = cell->GetFirst()->Eval(*current_env);
+            if (auto* special_form = As<SpecialForm>(callee)) {
+                result = special_form->Apply(cell->GetSecond(), *current_env);
+            } else if (auto* function = As<Function>(callee)) {
+                result =
+                    function->Apply(EvalArguments(cell->GetSecond(), *current_env), *current_env);
+            } else {
+                throw RuntimeError("Object is not callable");
+            }
+        } else {
+            result = expr->Eval(*current_env);
+        }
+
+        if (auto* tc = As<TailCall>(result)) {
+            expr = tc->GetExpr();
+            current_env = tc->GetEnv();
+        } else {
+            return result;
+        }
     }
-    if (auto* function = As<Function>(callee)) {
-        return function->Apply(EvalArguments(second_, env), env);
-    }
-    throw RuntimeError("Object is not callable");
 }
 
 std::string Cell::Serialize() const {
@@ -106,18 +124,28 @@ Object* LambdaFunction::Apply(const std::vector<Object*>& args, Environment&) {
         local_env->Define(params_[i], args[i]);
     }
 
-    Object* result = nullptr;
     auto* current = body_;
-    while (current != nullptr) {
+    while (true) {
         auto* cell = As<Cell>(current);
         if (!cell) {
             throw SyntaxError("lambda body must form a proper list");
         }
         AssertExpressionExists("lambda body", cell->GetFirst());
-        result = cell->GetFirst()->Eval(*local_env);
+        if (cell->GetSecond() == nullptr) {
+            return heap.Create<TailCall>(cell->GetFirst(), local_env);
+        }
+        cell->GetFirst()->Eval(*local_env);
         current = cell->GetSecond();
     }
-    return result;
+}
+
+void TailCall::Traverse(const std::function<void(GcNode*)>& visit) {
+    if (expr_) {
+        visit(expr_);
+    }
+    if (env_) {
+        visit(env_);
+    }
 }
 
 void LambdaFunction::Traverse(const std::function<void(GcNode*)>& visit) {

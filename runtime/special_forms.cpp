@@ -112,7 +112,7 @@ Object* MakeOrForm(Heap& heap) {
 }
 
 Object* MakeIfForm(Heap& heap) {
-    return MakeBuiltinForm(heap, "if", [](Object* raw_args, Environment& env) -> Object* {
+    return MakeBuiltinForm(heap, "if", [&heap](Object* raw_args, Environment& env) -> Object* {
         AssertProperRawArgumentList("if", raw_args);
 
         auto* condition = As<Cell>(raw_args);
@@ -138,12 +138,12 @@ Object* MakeIfForm(Heap& heap) {
         auto* condition_expression = condition->GetFirst();
         AssertExpressionExists("expression", condition_expression);
         if (IsFalse(condition_expression->Eval(env))) {
-            return alternative ? alternative->Eval(env) : nullptr;
+            return alternative ? heap.Create<TailCall>(alternative, &env) : nullptr;
         }
 
         auto* consequent_expression = consequent->GetFirst();
         AssertExpressionExists("expression", consequent_expression);
-        return consequent_expression->Eval(env);
+        return heap.Create<TailCall>(consequent_expression, &env);
     });
 }
 

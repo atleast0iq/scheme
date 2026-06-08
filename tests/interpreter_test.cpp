@@ -1,6 +1,9 @@
 #include "interpreter/interpreter.h"
 #include "runtime/error.h"
+#include "runtime/heap.h"
+#include "tests/fuzzer.h"
 
+#include <cstdint>
 #include <gtest/gtest.h>
 #include <string>
 #include <vector>
@@ -31,8 +34,6 @@ protected:
         EXPECT_THROW(Interpreter::Instance().Run(expression), NameError);
     }
 };
-
-// Booleans
 
 TEST_F(SchemeTest, BooleansAreSelfEvaluating) {
     ExpectEq("#t", "#t");
@@ -81,8 +82,6 @@ TEST_F(SchemeTest, OrSyntax) {
     ExpectEq("(or #f 1)", "1");
 }
 
-// Control flow
-
 TEST_F(SchemeTest, IfReturnValue) {
     ExpectEq("(if #t 0)", "0");
     ExpectEq("(if #f 0)", "()");
@@ -103,8 +102,6 @@ TEST_F(SchemeTest, IfSyntax) {
     ExpectSyntaxError("(if 1 2 3 4)");
 }
 
-// Eval
-
 TEST_F(SchemeTest, Quote) {
     ExpectEq("(quote (1 2))", "(1 2)");
     ExpectEq("'(1 2)", "(1 2)");
@@ -116,8 +113,6 @@ TEST_F(SchemeTest, BeCareful) {
     ExpectRuntimeError("('() ())");
     ExpectEq("'(())", "(())");
 }
-
-// Integers
 
 TEST_F(SchemeTest, IntegersAreSelfEvaluating) {
     ExpectEq("4", "4");
@@ -223,8 +218,6 @@ TEST_F(SchemeTest, IntegerAbsEdgeCases) {
     ExpectRuntimeError("(abs #t)");
     ExpectRuntimeError("(abs 1 2)");
 }
-
-// Lambda
 
 TEST_F(SchemeTest, SimpleLambda) {
     ExpectEq("((lambda (x) (+ 1 x)) 5)", "6");
@@ -336,8 +329,6 @@ TEST_F(SchemeTest, RedefinitionAndScoping) {
     ExpectEq("(+ 1 2 -3)", "0");
 }
 
-// Lists
-
 TEST_F(SchemeTest, ListsAreNotSelfEvaluating) {
     ExpectRuntimeError("(1)");
     ExpectRuntimeError("(1 2 3)");
@@ -407,8 +398,6 @@ TEST_F(SchemeTest, ListOperations) {
     ExpectRuntimeError("(list-tail '(1 2 3) 10)");
 }
 
-// Pair mutation
-
 TEST_F(SchemeTest, PairMutations) {
     ExpectNoError("(define x '(1 . 2))");
     ExpectNoError("(set-car! x 5)");
@@ -445,8 +434,6 @@ TEST_F(SchemeTest, SelfReferenceCdr) {
     ExpectNoError("(set-cdr! (cdr (cdr y)) 3)");
     ExpectEq("(cdr y)", "3");
 }
-
-// Symbols
 
 TEST_F(SchemeTest, SymbolsAreNotSelfEvaluating) {
     ExpectNameError("x");
@@ -510,73 +497,77 @@ TEST_F(SchemeTest, SerializeCallable) {
     ExpectEq("f", "<lambda>");
 }
 
-// Error paths
-
 TEST_F(SchemeTest, ImproperArgumentList) {
-    // object.cpp: "Function call arguments must form a proper list"
     ExpectSyntaxError("(+ . 1)");
 }
 
 TEST_F(SchemeTest, EmptyListCall) {
-    // interpreter.cpp: "Cannot evaluate empty list"
     ExpectRuntimeError("(())");
 }
 
 TEST_F(SchemeTest, TrailingTokens) {
-    // interpreter.cpp: "Unexpected token after expression"
     EXPECT_THROW(Interpreter::Instance().Run("1 2"), SyntaxError);
 }
 
 TEST_F(SchemeTest, IfImproperArgList) {
-    // special_forms.cpp: "if arguments must form a proper list"
     ExpectSyntaxError("(if . #t)");
 }
 
 TEST_F(SchemeTest, AndImproperArgList) {
-    // special_forms.cpp: "and arguments must form a proper list"
     ExpectSyntaxError("(and . #t)");
 }
 
 TEST_F(SchemeTest, SetCarRequiresPair) {
-    // special_forms.cpp: "set-car!: argument must be a pair"
     ExpectRuntimeError("(set-car! 1 2)");
 }
 
 TEST_F(SchemeTest, SetCdrRequiresPair) {
-    // special_forms.cpp: "set-cdr!: argument must be a pair"
     ExpectRuntimeError("(set-cdr! 1 2)");
 }
 
 TEST_F(SchemeTest, DefineNonSymbolTarget) {
-    // special_forms.cpp: "define expects a symbol or function signature"
     ExpectSyntaxError("(define 1 2)");
 }
 
 TEST_F(SchemeTest, DefineFunctionNonSymbolName) {
-    // special_forms.cpp: "define function name must be a symbol"
     ExpectSyntaxError("(define (1 x) x)");
 }
 
 TEST_F(SchemeTest, SetNonSymbol) {
-    // special_forms.cpp: "set! expects a symbol"
     ExpectSyntaxError("(set! 1 2)");
 }
 
 TEST_F(SchemeTest, LambdaImproperParamList) {
-    // special_forms.cpp: "lambda parameters must form a proper list"
     ExpectSyntaxError("(lambda (x . y) x)");
 }
 
 TEST_F(SchemeTest, LambdaParamsMustBeSymbols) {
-    // special_forms.cpp: "lambda parameters must be symbols"
     ExpectSyntaxError("(lambda (1) 1)");
 }
 
 TEST_F(SchemeTest, LambdaImproperBody) {
-    // object.cpp: "lambda body must form a proper list"
-    // lambda body — это список, переданный как second_ от params_cell
-    // improper body возникает если body — improper list, что невозможно через парсер
-    // но можно через set-cdr! на теле
     ExpectNoError("(define (f x) x)");
     ExpectEq("(f 1)", "1");
+}
+
+TEST_F(SchemeTest, GcCollectsTemporaryObjects) {
+    ExpectNoError("(define (loop n) (if (= n 0) 42 (loop (- n 1))))");
+    constexpr uint32_t kIterations = 1000;
+    for (uint32_t i = 0; i < kIterations; ++i) {
+        ExpectEq("(loop 1000)", "42");
+    }
+}
+
+TEST_F(SchemeTest, FuzzingDoesNotCrash) {
+    static constexpr uint32_t kShotsCount = 10000;
+    Fuzzer fuzzer;
+
+    for (uint32_t i = 0; i < kShotsCount; ++i) {
+        try {
+            Interpreter::Instance().Run(fuzzer.Next());
+        } catch (const SyntaxError&) {
+        } catch (const RuntimeError&) {
+        } catch (const NameError&) {
+        }
+    }
 }

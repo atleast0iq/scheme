@@ -198,6 +198,34 @@ private:
     Environment* closure_;
 };
 
+class TailCall : public Object {
+public:
+    TailCall(Object* expr, Environment* env) : expr_(expr), env_(env) {
+    }
+
+    Object* GetExpr() const {
+        return expr_;
+    }
+
+    Environment* GetEnv() const {
+        return env_;
+    }
+
+    Object* Eval(Environment&) override {
+        return this;
+    }
+
+    std::string Serialize() const override {
+        return "<tail-call>";
+    }
+
+    void Traverse(const std::function<void(GcNode*)>& visit) override;
+
+private:
+    Object* expr_;
+    Environment* env_;
+};
+
 Object* MakeBuiltinForm(Heap& heap, std::string name, RawArgsHandler handler);
 Object* MakeBuiltinFunction(Heap& heap, std::string name, EvaluatedArgsHandler handler);
 Object* MakeBoolean(Heap& heap, bool value);

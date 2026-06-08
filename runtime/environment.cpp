@@ -5,13 +5,7 @@
 #include "runtime/functions.h"
 #include "runtime/object.h"
 
-#include <algorithm>
-
 namespace {
-
-constexpr size_t kEnvironmentReserve = 64;
-
-using Binding = std::pair<std::string, Object*>;
 
 template <class Definitions>
 void RegisterBindings(Environment* env, Heap& heap, const Definitions& definitions) {
@@ -20,27 +14,18 @@ void RegisterBindings(Environment* env, Heap& heap, const Definitions& definitio
     }
 }
 
-auto FindBinding(auto& values, const std::string& name) {
-    return std::ranges::find(values, name, &Binding::first);
-}
-
 } // namespace
 
 Environment::Environment(Environment* parent) : parent_(parent) {
-    values_.reserve(kEnvironmentReserve);
 }
 
 void Environment::Define(const std::string& name, Object* value) {
-    if (auto binding = FindBinding(values_, name); binding != values_.end()) {
-        binding->second = value;
-        return;
-    }
-    values_.emplace_back(name, value);
+    values_[name] = value;
 }
 
 void Environment::Set(const std::string& name, Object* value) {
-    if (auto binding = FindBinding(values_, name); binding != values_.end()) {
-        binding->second = value;
+    if (auto it = values_.find(name); it != values_.end()) {
+        it->second = value;
         return;
     }
     if (parent_) {
@@ -51,8 +36,8 @@ void Environment::Set(const std::string& name, Object* value) {
 }
 
 Object* Environment::Lookup(const std::string& name) const {
-    if (auto binding = FindBinding(values_, name); binding != values_.end()) {
-        return binding->second;
+    if (auto it = values_.find(name); it != values_.end()) {
+        return it->second;
     }
     if (parent_) {
         return parent_->Lookup(name);
@@ -64,9 +49,9 @@ void Environment::Traverse(const std::function<void(GcNode*)>& visit) {
     if (parent_) {
         visit(parent_);
     }
-    for (const auto& binding : values_) {
-        if (binding.second) {
-            visit(binding.second);
+    for (const auto& [name, value] : values_) {
+        if (value) {
+            visit(value);
         }
     }
 }

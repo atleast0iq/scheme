@@ -4,8 +4,7 @@
 
 #include <functional>
 #include <string>
-#include <utility>
-#include <vector>
+#include <unordered_map>
 
 class Object;
 
@@ -21,7 +20,7 @@ public:
 
 private:
     Environment* parent_;
-    std::vector<std::pair<std::string, Object*>> values_;
+    std::unordered_map<std::string, Object*> values_;
 };
 
 Environment* MakeDefaultEnv();

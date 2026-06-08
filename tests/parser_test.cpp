@@ -2,8 +2,10 @@
 #include "runtime/error.h"
 #include "runtime/object.h"
 #include "tokenizer/tokenizer.h"
+#include "tests/fuzzer.h"
 
 #include <gtest/gtest.h>
+#include <cstdint>
 #include <random>
 #include <sstream>
 
@@ -26,7 +28,7 @@ std::string RandomSymbol(std::default_random_engine* rng) {
     return s;
 }
 
-} // namespace
+}
 
 TEST(Parser, ReadNumber) {
     auto* node = ReadFull("5");
@@ -152,4 +154,21 @@ TEST(Parser, InvalidInput) {
     EXPECT_THROW(ReadFull("(1 . ()"), SyntaxError);
     EXPECT_THROW(ReadFull("(1 . )"), SyntaxError);
     EXPECT_THROW(ReadFull("(1 . 2 3)"), SyntaxError);
+}
+
+TEST(Parser, FuzzingDoesNotCrash) {
+    static constexpr uint32_t kShotsCount = 100000;
+    Fuzzer fuzzer;
+
+    for (uint32_t i = 0; i < kShotsCount; ++i) {
+        try {
+            auto req = fuzzer.Next();
+            std::stringstream ss{req};
+            Tokenizer tokenizer{&ss};
+            while (!tokenizer.IsEnd()) {
+                Read(&tokenizer);
+            }
+        } catch (const SyntaxError&) {
+        }
+    }
 }
