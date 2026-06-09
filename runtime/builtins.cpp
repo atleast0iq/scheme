@@ -217,6 +217,16 @@ Object* MakeDivideFunction(Heap& heap) {
         });
 }
 
+Object* MakeModuloFunction(Heap& heap) {
+    return MakeBuiltinFunction(
+        heap, "%", [&heap](const std::vector<Object*>& args, Environment&) -> Object* {
+            AssertExactArgumentCount("%", args, 2);
+            return MakeNumber(heap, 
+                ReadIntegerArgument("%", args[0], 0) %
+                ReadIntegerArgument("%", args[1], 1));
+        });
+}
+
 Object* MakeMaxFunction(Heap& heap) {
     return MakeNonEmptyFoldFunction(heap, "max",
                                     [](int64_t lhs, int64_t rhs) { return std::max(lhs, rhs); });

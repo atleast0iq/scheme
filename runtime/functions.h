@@ -5,7 +5,7 @@
 
 #include <array>
 
-inline constexpr std::array<BuiltinDefinition, 25> kBuiltinFunctions = {{
+inline constexpr std::array<BuiltinDefinition, 26> kBuiltinFunctions = {{
     {"number?", MakeIsNumberFunction},  {"+", MakeAddFunction},
     {"-", MakeSubtractFunction},        {"*", MakeMultiplyFunction},
     {"/", MakeDivideFunction},          {"max", MakeMaxFunction},
@@ -18,5 +18,5 @@ inline constexpr std::array<BuiltinDefinition, 25> kBuiltinFunctions = {{
     {"cons", MakeConsFunction},         {"car", MakeCarFunction},
     {"cdr", MakeCdrFunction},           {"list", MakeListFunction},
     {"list-ref", MakeListRefFunction},  {"list-tail", MakeListTailFunction},
-    {"symbol?", MakeIsSymbolFunction},
+    {"symbol?", MakeIsSymbolFunction},  {"modulo", MakeModuloFunction}
 }};

@@ -28,3 +28,4 @@ Object* MakeListFunction(Heap& heap);
 Object* MakeListRefFunction(Heap& heap);
 Object* MakeListTailFunction(Heap& heap);
 Object* MakeIsSymbolFunction(Heap& heap);
+Object* MakeModuloFunction(Heap& heap);
